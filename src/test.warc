@@ -1,0 +1,9 @@
+WARC/1.1
+WARC-Type: warcinfo
+WARC-Date: 2006-09-19T17:20:14Z
+WARC-Record-ID: <urn:uuid:d7ae5c10-e6b3-4d27-967d-34780c58ba39>
+Content-Type: text/plain
+Content-Length: 4
+
+test
+
