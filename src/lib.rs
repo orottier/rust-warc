@@ -1,15 +1,19 @@
 //! A high performance Web Archive (WARC) file parser
 //!
+//! The WarcReader iterates over [WarcRecords](WarcRecord) from a [BufRead] input.
+//!
+//! Perfomance should be quite good, about ~500MiB/s on a single CPU core.
+//!
 //! ## Usage
 //!
 //! ```rust
 //! use rust_warc::WarcReader;
 //!
-//! use std::io;
-//!
 //! fn main() {
-//!     let stdin = io::stdin();
+//!     // we're taking input from stdin here, but any BufRead will do
+//!     let stdin = std::io::stdin();
 //!     let handle = stdin.lock();
+//!
 //!     let mut warc = WarcReader::new(handle);
 //!
 //!     let mut response_counter = 0;
@@ -94,7 +98,8 @@ impl Into<String> for CaseString {
 /// WARC/1.1
 /// WARC-Type: warcinfo
 /// WARC-Date: 2006-09-19T17:20:14Z
-/// WARC-Record-ID: <urn:uuid:d7ae5c10-e6b3-4d27-967d-34780c58ba39>
+/// WARC-Record-ID: multiline
+///  uuid value
 /// Content-Type: text/plain
 /// Content-Length: 4
 ///
@@ -110,6 +115,8 @@ impl Into<String> for CaseString {
 ///
 /// // header names are case insensitive
 /// assert_eq!(item.header.get(&"content-type".into()), Some(&"text/plain".into()));
+/// // and may span multiple lines
+/// assert_eq!(item.header.get(&"Warc-Record-ID".into()), Some(&"multiline\nuuid value".into()));
 ///
 /// assert_eq!(item.content, "test".as_bytes());
 /// ```
@@ -142,6 +149,7 @@ impl WarcRecord {
 
         let mut header = HashMap::<CaseString, String>::with_capacity(16); // no allocations if <= 16 header fields
 
+        let mut continuation: Option<(CaseString, String)> = None;
         loop {
             let mut line_buf = String::new();
 
@@ -149,24 +157,39 @@ impl WarcRecord {
                 return Err(WarcError::IO(io));
             }
 
-            // leniency: allow absent carriage return
-            if &line_buf == "\r\n" || &line_buf == "\n" {
+            if &line_buf == "\r\n" {
                 break;
             }
 
-            // todo field multiline continuations
-
             rtrim(&mut line_buf);
 
-            if let Some(semi) = line_buf.find(':') {
-                let value = line_buf.split_off(semi + 1).trim().to_string();
-                line_buf.pop(); // eat colon
-                rtrim(&mut line_buf);
-
-                header.insert(line_buf.into(), value);
+            if line_buf.starts_with(' ') || line_buf.starts_with('\t') {
+                if let Some(keyval) = &mut continuation {
+                    keyval.1.push('\n');
+                    keyval.1.push_str(line_buf.trim());
+                } else {
+                    return Err(WarcError::Malformed(String::from("Invalid header block")));
+                }
             } else {
-                return Err(WarcError::Malformed(String::from("Invalid header field")));
+                if let Some((key, value)) = std::mem::replace(&mut continuation, None) {
+                    header.insert(key, value);
+                }
+
+                if let Some(semi) = line_buf.find(':') {
+                    let value = line_buf.split_off(semi + 1).trim().to_string();
+                    line_buf.pop(); // eat colon
+                    rtrim(&mut line_buf);
+
+                    continuation = Some((line_buf.into(), value));
+                } else {
+                    return Err(WarcError::Malformed(String::from("Invalid header field")));
+                }
             }
+        }
+
+        // insert leftover continuation
+        if let Some((key, value)) = continuation {
+            header.insert(key, value);
         }
 
         let content_len = header.get(&"Content-Length".into());
