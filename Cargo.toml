@@ -1,10 +1,14 @@
 [package]
 name = "rust_warc"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Otto <otto@ot-to.nl>"]
 edition = "2018"
-description = "A high performance Web Archive (WARC) file reader"
+description = "A high performance and easy to use Web Archive (WARC) file reader"
 keywords = ["warc", "web", "archive", "parser"]
 categories = ["parser-implementations"]
+
+repository = "https://github.com/orottier/rust-warc"
+readme = "README.md"
+license = "MIT"
 
 [dependencies]
