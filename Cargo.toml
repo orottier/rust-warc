@@ -3,5 +3,8 @@ name = "rust_warc"
 version = "0.1.0"
 authors = ["Otto <otto@ot-to.nl>"]
 edition = "2018"
+description = "A high performance Web Archive (WARC) file reader"
+keywords = ["warc", "web", "archive", "parser"]
+categories = ["parser-implementations"]
 
 [dependencies]
