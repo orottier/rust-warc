@@ -1,6 +1,8 @@
 Rust-Warc
 =========
 
+![crates.io](https://img.shields.io/crates/v/rust_warc.svg)
+
 A high performance and easy to use Web Archive (WARC) file reader
 
 ```rust
