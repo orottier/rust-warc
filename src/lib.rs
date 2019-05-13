@@ -88,7 +88,7 @@ impl Into<String> for CaseString {
 ///
 /// # Usage
 /// ```rust
-/// use rust_warc::WarcReader;
+/// use rust_warc::WarcRecord;
 ///
 /// /* test.warc:
 /// WARC/1.1
@@ -102,13 +102,15 @@ impl Into<String> for CaseString {
 ///
 /// */
 ///
-/// let data = &include_bytes!("test.warc")[..];
-/// let mut warc = WarcReader::new(data);
+/// let mut data = &include_bytes!("test.warc")[..];
 ///
-/// let item = warc.next().expect("finished").expect("parse error");
+/// let item = WarcRecord::parse(&mut data).unwrap();
 ///
 /// assert_eq!(item.version, "WARC/1.1");
-/// assert_eq!(item.header.get(&"content-type".into()).unwrap(), "text/plain");
+///
+/// // header names are case insensitive
+/// assert_eq!(item.header.get(&"content-type".into()), Some(&"text/plain".into()));
+///
 /// assert_eq!(item.content, "test".as_bytes());
 /// ```
 pub struct WarcRecord {
@@ -120,11 +122,99 @@ pub struct WarcRecord {
     pub content: Vec<u8>,
 }
 
+impl WarcRecord {
+    pub fn parse(mut read: impl BufRead) -> Result<Self, WarcError> {
+        let mut version = String::new();
+
+        if let Err(io) = read.read_line(&mut version) {
+            return Err(WarcError::IO(io));
+        }
+
+        if version.is_empty() {
+            return Err(WarcError::EOF);
+        }
+
+        rtrim(&mut version);
+
+        if !version.starts_with("WARC/1.") {
+            return Err(WarcError::Malformed(String::from("Unknown WARC version")));
+        }
+
+        let mut header = HashMap::<CaseString, String>::with_capacity(16); // no allocations if <= 16 header fields
+
+        loop {
+            let mut line_buf = String::new();
+
+            if let Err(io) = read.read_line(&mut line_buf) {
+                return Err(WarcError::IO(io));
+            }
+
+            // leniency: allow absent carriage return
+            if &line_buf == "\r\n" || &line_buf == "\n" {
+                break;
+            }
+
+            // todo field multiline continuations
+
+            rtrim(&mut line_buf);
+
+            if let Some(semi) = line_buf.find(':') {
+                let value = line_buf.split_off(semi + 1).trim().to_string();
+                line_buf.pop(); // eat colon
+                rtrim(&mut line_buf);
+
+                header.insert(line_buf.into(), value);
+            } else {
+                return Err(WarcError::Malformed(String::from("Invalid header field")));
+            }
+        }
+
+        let content_len = header.get(&"Content-Length".into());
+        if content_len.is_none() {
+            return Err(WarcError::Malformed(String::from(
+                "Content-Length is missing",
+            )));
+        }
+
+        let content_len = content_len.unwrap().parse::<usize>();
+        if content_len.is_err() {
+            return Err(WarcError::Malformed(String::from(
+                "Content-Length is not a number",
+            )));
+        }
+
+        let content_len = content_len.unwrap();
+        let mut content = vec![0; content_len];
+        if let Err(io) = read.read_exact(&mut content) {
+            return Err(WarcError::IO(io));
+        }
+
+        let mut linefeed = [0u8; 4];
+        if let Err(io) = read.read_exact(&mut linefeed) {
+            return Err(WarcError::IO(io));
+        }
+        if linefeed != [13, 10, 13, 10] {
+            return Err(WarcError::Malformed(String::from(
+                "No double linefeed after record content",
+            )));
+        }
+
+        let record = WarcRecord {
+            version,
+            header,
+            content,
+        };
+
+        Ok(record)
+    }
+}
+
 /// WARC Processing error
 #[derive(Debug)]
 pub enum WarcError {
     Malformed(String),
     IO(std::io::Error),
+    EOF,
 }
 
 /// WARC reader instance
@@ -147,7 +237,6 @@ pub enum WarcError {
 pub struct WarcReader<R> {
     read: R,
     valid_state: bool,
-    linefeed: [u8; 4],
 }
 
 impl<R: BufRead> WarcReader<R> {
@@ -156,7 +245,6 @@ impl<R: BufRead> WarcReader<R> {
         Self {
             read,
             valid_state: true,
-            linefeed: [0u8; 4],
         }
     }
 }
@@ -169,100 +257,14 @@ impl<R: BufRead> Iterator for WarcReader<R> {
             return None;
         }
 
-        let mut version = String::new();
-
-        if let Err(io) = self.read.read_line(&mut version) {
-            self.valid_state = false;
-            return Some(Err(WarcError::IO(io)));
-        }
-
-        if version.is_empty() {
-            return None; // EOF
-        }
-
-        rtrim(&mut version);
-
-        if !version.starts_with("WARC/1.") {
-            self.valid_state = false;
-            return Some(Err(WarcError::Malformed(String::from(
-                "Unknown WARC version",
-            ))));
-        }
-
-        let mut header = HashMap::<CaseString, String>::with_capacity(16); // no allocations if <= 16 header fields
-
-        loop {
-            let mut line_buf = String::new();
-
-            if let Err(io) = self.read.read_line(&mut line_buf) {
+        match WarcRecord::parse(&mut self.read) {
+            Ok(item) => Some(Ok(item)),
+            Err(WarcError::EOF) => None,
+            Err(e) => {
                 self.valid_state = false;
-                return Some(Err(WarcError::IO(io)));
-            }
-
-            // leniency: allow absent carriage return
-            if &line_buf == "\r\n" || &line_buf == "\n" {
-                break;
-            }
-
-            // todo field multiline continuations
-
-            rtrim(&mut line_buf);
-
-            if let Some(semi) = line_buf.find(':') {
-                let value = line_buf.split_off(semi + 1).trim().to_string();
-                line_buf.pop(); // eat colon
-                rtrim(&mut line_buf);
-
-                header.insert(line_buf.into(), value);
-            } else {
-                self.valid_state = false;
-                return Some(Err(WarcError::Malformed(String::from(
-                    "Invalid header field",
-                ))));
+                Some(Err(e))
             }
         }
-
-        let content_len = header.get(&"Content-Length".into());
-        if content_len.is_none() {
-            self.valid_state = false;
-            return Some(Err(WarcError::Malformed(String::from(
-                "Content-Length is missing",
-            ))));
-        }
-
-        let content_len = content_len.unwrap().parse::<usize>();
-        if content_len.is_err() {
-            self.valid_state = false;
-            return Some(Err(WarcError::Malformed(String::from(
-                "Content-Length is not a number",
-            ))));
-        }
-
-        let content_len = content_len.unwrap();
-        let mut content = vec![0; content_len];
-        if let Err(io) = self.read.read_exact(&mut content) {
-            self.valid_state = false;
-            return Some(Err(WarcError::IO(io)));
-        }
-
-        if let Err(io) = self.read.read_exact(&mut self.linefeed) {
-            self.valid_state = false;
-            return Some(Err(WarcError::IO(io)));
-        }
-        if self.linefeed != [13, 10, 13, 10] {
-            self.valid_state = false;
-            return Some(Err(WarcError::Malformed(String::from(
-                "No double linefeed after record content",
-            ))));
-        }
-
-        let record = WarcRecord {
-            version,
-            header,
-            content,
-        };
-
-        Some(Ok(record))
     }
 }
 
