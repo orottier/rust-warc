@@ -1,5 +1,5 @@
 [package]
-name = "rust-warc"
+name = "rust_warc"
 version = "0.1.0"
 authors = ["Otto <otto@ot-to.nl>"]
 edition = "2018"

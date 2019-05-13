@@ -18,13 +18,13 @@ pub enum WarcError {
     IO(std::io::Error),
 }
 
-pub struct Warc<R> {
+pub struct WarcReader<R> {
     read: R,
     valid_state: bool,
     linefeed: [u8; 4],
 }
 
-impl<R: BufRead> Warc<R> {
+impl<R: BufRead> WarcReader<R> {
     pub fn new(read: R) -> Self {
         Self {
             read,
@@ -34,7 +34,7 @@ impl<R: BufRead> Warc<R> {
     }
 }
 
-impl<R: BufRead> Iterator for Warc<R> {
+impl<R: BufRead> Iterator for WarcReader<R> {
     type Item = Result<WarcRecord, WarcError>;
 
     fn next(&mut self) -> Option<Result<WarcRecord, WarcError>> {
@@ -143,7 +143,7 @@ mod tests {
     fn it_works() {
         let data = &include_bytes!("warc.in")[..];
 
-        let mut warc = Warc::new(data);
+        let mut warc = WarcReader::new(data);
 
         let item = warc.next();
         assert!(item.is_some());
