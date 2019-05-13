@@ -1,0 +1,72 @@
+WARC/1.0
+WARC-Type: warcinfo
+WARC-Date: 2019-04-18T10:12:43Z
+WARC-Record-ID: <urn:uuid:ef19c790-8473-4bb7-8ef2-c77ad883d43d>
+Content-Length: 501
+Content-Type: application/warc-fields
+WARC-Filename: CC-MAIN-20190418101243-20190418122248-00011.warc.gz
+
+isPartOf: CC-MAIN-2019-18
+publisher: Common Crawl
+description: Wide crawl of the web for April 2019
+operator: Common Crawl Admin (info@commoncrawl.org)
+hostname: ip-10-169-175-90.ec2.internal
+software: Apache Nutch 1.15 (modified, https://github.com/commoncrawl/nutch/)
+robots: checked via crawler-commons 1.1-SNAPSHOT (https://github.com/crawler-commons/crawler-commons)
+format: WARC File Format 1.1
+conformsTo: http://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.1/
+
+
+WARC/1.0
+WARC-Type: request
+WARC-Date: 2019-04-18T10:38:25Z
+WARC-Record-ID: <urn:uuid:b36ddade-7ff0-4482-a967-5cbbd8aadc7c>
+Content-Length: 301
+Content-Type: application/http; msgtype=request
+WARC-Warcinfo-ID: <urn:uuid:ef19c790-8473-4bb7-8ef2-c77ad883d43d>
+WARC-IP-Address: 93.95.100.90
+WARC-Target-URI: http://0-1.ru/?dd=20180128
+
+GET /?dd=20180128 HTTP/1.1
+User-Agent: CCBot/2.0 (https://commoncrawl.org/faq/)
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+If-Modified-Since: Tue, 22 Jan 2019 22:59:57 GMT
+Host: 0-1.ru
+Connection: Keep-Alive
+Accept-Encoding: gzip
+
+
+
+WARC/1.0
+WARC-Type: response
+WARC-Date: 2019-04-18T10:38:25Z
+WARC-Record-ID: <urn:uuid:716838d3-9c47-4879-9767-a891453e47c0>
+Content-Length: 35246
+Content-Type: application/http; msgtype=response
+WARC-Warcinfo-ID: <urn:uuid:ef19c790-8473-4bb7-8ef2-c77ad883d43d>
+WARC-Concurrent-To: <urn:uuid:b36ddade-7ff0-4482-a967-5cbbd8aadc7c>
+WARC-IP-Address: 93.95.100.90
+WARC-Target-URI: http://0-1.ru/?dd=20180128
+WARC-Payload-Digest: sha1:V3M77IT2N77BWP6YRROHT6T4GGEBDADB
+WARC-Block-Digest: sha1:FIUSCXD4X62IKLENMER6EI2245FWERZD
+WARC-Identified-Payload-Type: text/html
+
+HTTP/1.1 200 OK
+Date: Thu, 18 Apr 2019 10:37:44 GMT
+Server: Microsoft-IIS/6.0
+X-Powered-By: ASP.NET
+Content-Length: 35001
+Content-Type: text/html
+Set-Cookie: ASPSESSIONIDQACQQSDC=BBDCGHCACFIAOMAFFIHDJOKE; path=/
+Cache-control: private
+
+
+
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
+<meta http-equiv="Content-Language" content="ru">
+</head>
