@@ -51,7 +51,7 @@ fn rtrim(s: &mut String) {
 ///
 /// assert_eq!(s1, s2);
 /// ```
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub struct CaseString {
     inner: String,
 }
@@ -120,6 +120,7 @@ impl Into<String> for CaseString {
 ///
 /// assert_eq!(item.content, "test".as_bytes());
 /// ```
+#[derive(Debug, Clone)]
 pub struct WarcRecord {
     /// WARC version string (WARC/1.1)
     pub version: String,
