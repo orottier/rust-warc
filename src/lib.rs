@@ -243,13 +243,12 @@ impl WarcRecord {
             .and_then(|_| f.write_all(&[13, 10]))
             .map(|_| {
                 for (key, value) in self.header.iter() {
-                    f.write_all(format!("{}: {}\r\n", key.as_str(), value).as_bytes()).unwrap();
+                    f.write_all(format!("{}: {}\r\n", key.as_str(), value).as_bytes())
+                        .unwrap();
                 }
             })
             .and_then(|_| f.write_all(&[13, 10]))
-            .and_then(|_| {
-                f.write_all(&self.content)
-            })
+            .and_then(|_| f.write_all(&self.content))
             .and_then(|_| f.write_all(&[13, 10, 13, 10]))
     }
 }
