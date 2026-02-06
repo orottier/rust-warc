@@ -53,11 +53,15 @@ fn rtrim(s: &mut String) {
 pub struct CaseString {
     inner: String,
 }
-impl CaseString {
-    pub fn to_string(self) -> String {
-        self.into()
-    }
 
+use std::fmt;
+impl fmt::Display for CaseString {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.inner)
+    }
+}
+
+impl CaseString {
     pub fn as_str(&self) -> &str {
         self.inner.as_str()
     }
@@ -344,5 +348,18 @@ mod tests {
         assert!(item.is_some());
         let item = item.unwrap();
         assert!(item.is_err()); // incomplete record
+    }
+
+    #[test]
+    fn case_string() {
+        let one = CaseString::from("test");
+        let two = CaseString::from("TEST");
+        let three = CaseString::from("bar");
+        assert_eq!(one, two);
+        assert_ne!(one, three);
+        assert_ne!(two, three);
+
+        assert_eq!(one.to_string(), String::from("test"));
+        assert_eq!(one.as_str(), "test");
     }
 }
