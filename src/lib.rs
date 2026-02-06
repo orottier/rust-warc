@@ -84,9 +84,9 @@ impl From<&str> for CaseString {
     }
 }
 
-impl Into<String> for CaseString {
-    fn into(self) -> String {
-        self.inner
+impl From<CaseString> for String {
+    fn from(val: CaseString) -> Self {
+        val.inner
     }
 }
 
@@ -176,7 +176,7 @@ impl WarcRecord {
                     return Err(WarcError::Malformed(String::from("Invalid header block")));
                 }
             } else {
-                if let Some((key, value)) = std::mem::replace(&mut continuation, None) {
+                if let Some((key, value)) = continuation.take() {
                     header.insert(key, value);
                 }
 
@@ -239,11 +239,10 @@ impl WarcRecord {
     pub fn write_into(&self, f: &mut dyn std::io::Write) -> std::io::Result<()> {
         f.write_all(self.version.as_bytes())
             .and_then(|_| f.write_all(&[13, 10]))
-            .and_then(|_| {
+            .map(|_| {
                 for (key, value) in self.header.iter() {
                     f.write_all(format!("{}: {}\r\n", key.as_str(), value).as_bytes()).unwrap();
                 }
-                Ok(())
             })
             .and_then(|_| f.write_all(&[13, 10]))
             .and_then(|_| {
