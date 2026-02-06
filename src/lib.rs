@@ -9,25 +9,23 @@
 //! ```rust
 //! use rust_warc::WarcReader;
 //!
-//! fn main() {
-//!     // we're taking input from stdin here, but any BufRead will do
-//!     let stdin = std::io::stdin();
-//!     let handle = stdin.lock();
+//! // we're taking input from stdin here, but any BufRead will do
+//! let stdin = std::io::stdin();
+//! let handle = stdin.lock();
 //!
-//!     let mut warc = WarcReader::new(handle);
+//! let mut warc = WarcReader::new(handle);
 //!
-//!     let mut response_counter = 0;
-//!     for item in warc {
-//!         let record = item.expect("IO/malformed error");
+//! let mut response_counter = 0;
+//! for item in warc {
+//!     let record = item.expect("IO/malformed error");
 //!
-//!         // header names are case insensitive
-//!         if record.header.get(&"WARC-Type".into()) == Some(&"response".into()) {
-//!             response_counter += 1;
-//!         }
+//!     // header names are case insensitive
+//!     if record.header.get(&"WARC-Type".into()) == Some(&"response".into()) {
+//!         response_counter += 1;
 //!     }
-//!
-//!     println!("# response records: {}", response_counter);
 //! }
+//!
+//! println!("# response records: {}", response_counter);
 //! ```
 
 use std::collections::HashMap;
