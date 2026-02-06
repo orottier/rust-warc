@@ -59,6 +59,10 @@ impl CaseString {
     pub fn to_string(self) -> String {
         self.into()
     }
+
+    pub fn as_str(&self) -> &str {
+        self.inner.as_str()
+    }
 }
 
 impl PartialEq<String> for CaseString {
@@ -229,6 +233,22 @@ impl WarcRecord {
         };
 
         Ok(record)
+    }
+
+    pub fn write_into(&self, f: &mut dyn std::io::Write) -> std::io::Result<()> {
+        f.write_all(self.version.as_bytes())
+            .and_then(|_| f.write_all(&[13, 10]))
+            .and_then(|_| {
+                for (key, value) in self.header.iter() {
+                    f.write_all(format!("{}: {}\r\n", key.as_str(), value).as_bytes()).unwrap();
+                }
+                Ok(())
+            })
+            .and_then(|_| f.write_all(&[13, 10]))
+            .and_then(|_| {
+                f.write_all(&self.content)
+            })
+            .and_then(|_| f.write_all(&[13, 10, 13, 10]))
     }
 }
 
